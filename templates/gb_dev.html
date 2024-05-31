@@ -1,0 +1,518 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="row" style="width: 100%">
+    <div class="col-sm-4">
+        <h4 class="hd" style="display:inline-block;width: 300px;margin-bottom: 10px">下级平台</h4>
+    </div>
+    <div class="col-sm-8">
+            <button style="float: right;margin-bottom: 5px;margin-right: 30px;width: 130px;height:40px"
+                        class="btn btn-info" onclick="init()">刷新列表</button>
+    </div>
+
+    </div>
+
+
+    <div class="row" style="padding-left: 13px">
+        <div class="col-sm-3" style="overflow:auto;width:330px;height: 560px">
+            <ul class="ztree" style="height: 560px;border-color: #18bc9c ;border-style: solid" id="tree_container"></ul>
+        </div>
+        <div class="col-sm-9" style="max-height: 630px">
+            <table class="table table-striped table-hover table-bordered table-condensed" id="maintable" style="
+    margin-bottom: 2px;">
+
+                <tr>
+                    <th style="width: 60px">ID</th>
+                    <th style="width: 190px">名称</th>
+                    <th style="width: 190px">国标编码</th>
+                    <th style="width: 100px">厂家</th>
+{#                    <th style="width: 90px">网络类型</th>#}
+                    <th style="width: 150px">注册时间</th>
+                    <th style="width: 150px">心跳时间</th>
+                    <th style="width: 80px">状态</th>
+                    <th>操作</th>
+                </tr>
+                <tbody id="tbody">
+                </tbody>
+            </table>
+            <div></div>
+
+            <div id="nondata" style="display: none">
+                <div style="text-align: center; padding-top: 10px">无数据</div>
+            </div>
+
+            <div class="row" style="text-align: center">
+                <ul class="pagination" id="pagi-content" style="margin-top: 7px;margin-bottom: 3px">
+                </ul>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}
+{% block custom_js %}
+    <script type="application/javascript">
+      //鼠标移入节点，显示编辑按钮
+
+      function add_gateway(ele){
+        ele = jQuery(ele);
+        var id  = ele.attr("tree_id");
+        var tree_name = ele.attr("tree_name");
+        var item = {};
+        var d = dialog({
+              width: 550,
+              height: 560,
+              title:  tree_name + ' --> 新增下级网关平台',
+              okValue: '确定',
+              content: '<div class="alert alert-info">SIP信令交互方式为：UDP模式 ' +
+                  '  注册间隔：86400  心跳间隔：60秒(局域网设备)/20秒(公网设备) SIP-ID:{{ config.SIP_ID }} SIP-IP:{{ config.SIP_SERVER_IP }} SIP-PORT:{{ config.SIP_SERVER_PORT }}</div>' +
+        '<form class="form-horizontal" role="form"   method="post" id="gb_update">\n' +
+                                        '<div class="mb-3 mt-3">\n' +
+                  '\t\t<label for="name" class="form-label">设备名:</label>\n' +
+                  '\t\t<input type="name" class="form-control" id="name" placeholder="输入设备名" name="name">\n' +
+                  '\t  </div>\n' +
+                  '\t  <div class="mb-3">\n' +
+                  '\t\t<label for="code" class="form-label">国标编码:</label>\n' +
+                  '\t\t<input type="code" class="form-control" id="code" placeholder="输入20位数字的国标编码" name="code">\n' +
+                  '\t  </div>\n' +
+
+                                                              '<div class="mb-3 mt-3">\n' +
+                  '\t\t<label for="ip" class="form-label">SIP IP:</label>\n' +
+                  '\t\t<input type="ip" class="form-control" id="ip" placeholder="输入SIP IP" name="ip">\n' +
+                      '<small id="emailHelp" class="form-text text-muted">视频网关设备的SIP服务的IP。如：192.168.1.148</small>'+
+                  '\t  </div>\n' +
+                  '\t  <div class="mb-3">\n' +
+                  '\t\t<label for="port" class="form-label">SIP端口:</label>\n' +
+                  '\t\t<input type="number" class="form-control" id="dircode" placeholder="输入SIP端口" name="port">\n' +
+                      '<small id="emailHelp" class="form-text text-muted">视频网关设备的SIP服务的端口。如：5060</small>'+
+                  '\t  </div>\n' +
+
+                                        '<div class="mb-3 mt-3">\n' +
+                  '\t\t<label for="dirname" class="form-label">强制验证源地址:&nbsp;</label>\n' +
+                  '      <input class="form-check-input" type="checkbox"  name="limit_ipport" value="1" id="flexCheckChecked" >\n' +
+
+                      '<small id="emailHelp" class="form-text text-muted">开启后，当其SIP信令源地址符合上面的设置服务器才会返回响应</small>' +
+                  '\t  </div>\n' +
+                  '\t  <div class="mb-3">\n' +
+                  '\t\t<label for="dircode" class="form-label">取流模式:</label>\n' +
+                    '<select class="form-select" id="exampleSelect1" name="rtp_mode">\n' +
+                  '                      <option value="0">UDP</option>\n' +
+                  '                      <option value="1">TCP</option>\n' +
+                  '                    </select>'+
+                  '\t  </div>\n' +
+              '\n' +
+
+              '</form>',
+              ok: function () {
+                var _form_data = jQuery("#gb_update").serializeArray();
+                var form_data = {"dir_code_id":id};
+                _form_data.forEach(function (item) {
+                  form_data[item['name']] = item['value']
+                })
+                console.log(form_data);
+                simple_post('/api/gb_dev/add_gateway', form_data, function (res) {
+                  var status = res.status;
+                  if (!status) {
+                    show_msg(res.message, 800);
+                  } else {
+                    show_msg("success", 1000);
+                    d.close().remove()
+                    init()
+                  }
+
+                  {#console.log(res);#}
+                })
+                return false;
+              },
+              cancelValue: '取消',
+              cancel: function () {
+              }
+
+            })
+        d.showModal();
+
+      }
+
+
+
+      function dev_detail(ele){
+        ele = jQuery(ele);
+        var id  = ele.attr("tree_id");
+        var tree_name = ele.attr("tree_name");
+        var is_dir = ele.attr("is_dir");
+        simple_get(
+              "/api/gb_dev/all_gateway_info",function (res){
+                var gateways = res.data;
+                var gbgateway_info = null;
+                gateways.forEach(function(item,index){
+                  if (item.code == id){
+                    gbgateway_info = item;
+                  }
+                })
+                if(!gbgateway_info){
+                  show_msg("该设备已不存在！ 请刷新后重试")
+                }
+                else {
+                    var d = dialog({
+              width: 550,
+              height: 230,
+              title:  '['+ gbgateway_info.name +']详情',
+              //okValue: '确定',
+              content: '<div class="alert alert-info">' +
+                  '网关['+ gbgateway_info.name +']详细信息：<br/> ' +
+                  '国标编码： '+ gbgateway_info.code +' <br/>' +
+                  'SIP IP：'+ gbgateway_info.ip +' <br/>' +
+                  'SIP 端口：'+ gbgateway_info.port +'<br/>' +
+                  '强制验证源地址：'+ (gbgateway_info.limit_ipport?"是":"否") +'<br/>' +
+                  '取流模式：'+ (gbgateway_info.rtp_mode?"TCP-passive": "UDP")+'<br/>' +
+                  '设备制造商：'+ (gbgateway_info.manufacture  || '-')+'<br/>' +
+                  '设备型号：'+ (gbgateway_info.model || '-') +'<br/>' +
+                  '设备状态： '+ (gbgateway_info.is_online?'是':"否" ) +'<br/>' +
+                  '最近心跳时间：'+ (gbgateway_info.heartbeat_time? getDatetime(gbgateway_info.heartbeat_time*1000):"-") +'<br/>' +
+                  '</div>'
+             ,
+
+              cancelValue: '取消',
+              cancel: function () {
+              }
+
+            })
+                    d.showModal();
+                }
+              }
+          )
+
+      }
+
+      function edit(ele){
+        ele = jQuery(ele);
+        var id  = ele.attr("tree_id");
+        var tree_name = ele.attr("tree_name");
+        var is_dir = ele.attr("is_dir");
+        if(is_dir ==1){
+          // 是目录
+            var d = dialog({
+              width: 500,
+              height: 260,
+              title:  '编辑目录[' +  tree_name + ']',
+              okValue: '确定',
+              content: '<div class="alert alert-info">注意：目录名不能和现有目录重名。国标编码不能和现有设备、现有目录重复。</div>' +
+        '<form class="form-horizontal" role="form"   method="post" id="add_dir">\n' +
+                  '<div class="mb-3 mt-3">\n' +
+                  '\t\t<label for="dirname" class="form-label">目录名:</label>\n' +
+                  '\t\t<input type="dirname" class="form-control" id="dirname" placeholder="输入目录名" name="name" value="'+ tree_name +'">\n' +
+                  '\t  </div>\n' +
+                  '\t  <div class="mb-3">\n' +
+                  '\t\t<label for="dircode" class="form-label">国标编码:</label>\n' +
+                  '\t\t<input type="dircode" class="form-control" id="dircode" placeholder="输入20位数字的国标编码" ' +
+                  'name="code" value="'+ id +'" >\n' +
+                  '\t  </div>\n' +
+
+
+              '</form>',
+              ok: function () {
+                var _form_data = jQuery("#add_dir").serializeArray();
+                var form_data = {"old_code": id};
+                _form_data.forEach(function (item) {
+                  form_data[item['name']] = item['value']
+                })
+                console.log(form_data);
+                simple_post('/api/gb_dev/edit_dir', form_data, function (res) {
+                  console.log(res);
+                  var status = res.status;
+                  if (!status) {
+                    show_msg(res.message, 800);
+                  } else {
+                    show_msg("success", 1000);
+                    d.close().remove()
+                    init();
+                  }
+
+                  {#console.log(res);#}
+                })
+                return false;
+              },
+              cancelValue: '取消',
+              cancel: function () {
+              }
+
+            })
+            d.showModal();
+        }else{
+          // 是设备
+          simple_get(
+              "/api/gb_dev/all_gateway_info",function (res){
+                var gateways = res.data;
+                var gbgateway_info = null;
+                gateways.forEach(function(item,index){
+                  if (item.code == id){
+                    gbgateway_info = item;
+                  }
+                })
+                if(!gbgateway_info){
+                  show_msg("该设备已不存在！ 请刷新后重试")
+                }
+                else {
+                    var d = dialog({
+              width: 550,
+              height: 560,
+              title:  '编辑下级网关['+ gbgateway_info.name +']',
+              okValue: '确定',
+              content: '<div class="alert alert-info">SIP信令交互方式为：UDP模式 ' +
+                  '  注册间隔：86400  心跳间隔：60秒(局域网设备)/20秒(公网设备) SIP-ID:{{ config.SIP_ID }} SIP-IP:{{ config.SIP_SERVER_IP }} SIP-PORT:{{ config.SIP_SERVER_PORT }}</div>' +
+        '<form class="form-horizontal" role="form"   method="post" id="gb_update">\n' +
+                                        '<div class="mb-3 mt-3">\n' +
+                  '\t\t<label for="name" class="form-label">设备名:</label>\n' +
+                  '\t\t<input type="name" class="form-control" id="name" placeholder="输入设备名" name="name" value="'+ gbgateway_info.name +'">\n' +
+                  '\t  </div>\n' +
+                  '\t  <div class="mb-3">\n' +
+                  '\t\t<label for="code" class="form-label">国标编码:</label>\n' +
+                  '\t\t<input type="code" class="form-control" id="code" placeholder="输入20位数字的国标编码" name="code" value="'+ gbgateway_info.code +'">\n' +
+                  '\t  </div>\n' +
+
+                                                              '<div class="mb-3 mt-3">\n' +
+                  '\t\t<label for="ip" class="form-label">SIP IP:</label>\n' +
+                  '\t\t<input type="ip" class="form-control" id="ip" placeholder="输入SIP IP" name="ip" value="'+ gbgateway_info.ip +'">\n' +
+                      '<small id="emailHelp" class="form-text text-muted">视频网关设备的SIP服务的IP。如：192.168.1.148</small>'+
+                  '\t  </div>\n' +
+                  '\t  <div class="mb-3">\n' +
+                  '\t\t<label for="port" class="form-label">SIP端口:</label>\n' +
+                  '\t\t<input type="number" class="form-control" id="dircode" placeholder="输入SIP端口" name="port" value="'+ gbgateway_info.port +'">\n' +
+                      '<small id="emailHelp" class="form-text text-muted">视频网关设备的SIP服务的端口。如：5060</small>'+
+                  '\t  </div>\n' +
+
+                                        '<div class="mb-3 mt-3">\n' +
+                  '\t\t<label for="dirname" class="form-label">强制验证源地址:&nbsp;</label>\n' +
+                  '      <input class="form-check-input" type="checkbox" id="limit_ipport" name="limit_ipport" value="1" id="flexCheckChecked" >\n' +
+
+                      '<small id="emailHelp" class="form-text text-muted">开启后，当其SIP信令源地址符合上面的设置服务器才会返回响应</small>' +
+                  '\t  </div>\n' +
+                  '\t  <div class="mb-3">\n' +
+                  '\t\t<label for="dircode" class="form-label">取流模式:</label>\n' +
+                    '<select class="form-select" id="rtp_mode" name="rtp_mode">\n' +
+                  '                      <option value="0">UDP</option>\n' +
+                  '                      <option value="1">TCP</option>\n' +
+                  '                    </select>'+
+                  '\t  </div>\n' +
+              '\n' +
+
+              '</form>',
+              ok: function () {
+                var _form_data = jQuery("#gb_update").serializeArray();
+                var form_data = {"old_code":id};
+                _form_data.forEach(function (item) {
+                  form_data[item['name']] = item['value']
+                })
+                console.log(form_data);
+                simple_post('/api/gb_dev/edit_gateway', form_data, function (res) {
+                  var status = res.status;
+                  if (!status) {
+                    show_msg(res.message, 800);
+                  } else {
+                    show_msg("success", 1000);
+                    d.close().remove()
+                    init();
+                  }
+
+                  {#console.log(res);#}
+                })
+                return false;
+              },
+               onshow:function(){
+                if(gbgateway_info.limit_ipport){
+                  jQuery("#limit_ipport").prop("checked",true);
+                }
+                //jQuery("#limit_ipport").val(gbgateway_info.limit_ipport);
+                jQuery("#rtp_mode").val(gbgateway_info.rtp_mode);
+                      },
+              cancelValue: '取消',
+              cancel: function () {
+              }
+
+            })
+                    d.showModal();
+                }
+              }
+          )
+
+        }
+      }
+
+      function add_dir(ele){
+        ele = jQuery(ele);
+        var id  = ele.attr("tree_id");
+        var tree_name = ele.attr("tree_name");
+        var d = dialog({
+              width: 500,
+              height: 260,
+              title:  tree_name + ' --> 新增子目录',
+              okValue: '确定',
+              content: '<div class="alert alert-info">注意：子目录名不能和现有目录重名。国标编码不能和现有设备、现有目录重复。</div>' +
+        '<form class="form-horizontal" role="form"   method="post" id="add_dir">\n' +
+                  '<div class="mb-3 mt-3">\n' +
+                  '\t\t<label for="dirname" class="form-label">目录名:</label>\n' +
+                  '\t\t<input type="dirname" class="form-control" id="dirname" placeholder="输入目录名" name="name">\n' +
+                  '\t  </div>\n' +
+                  '\t  <div class="mb-3">\n' +
+                  '\t\t<label for="dircode" class="form-label">国标编码:</label>\n' +
+                  '\t\t<input type="dircode" class="form-control" id="dircode" placeholder="输入20位数字的国标编码" name="code">\n' +
+                  '\t  </div>\n' +
+
+
+              '</form>',
+              ok: function () {
+                var _form_data = jQuery("#add_dir").serializeArray();
+                var form_data = {"parent_id": id};
+                _form_data.forEach(function (item) {
+                  form_data[item['name']] = item['value']
+                })
+                console.log(form_data);
+                simple_post('/api/gb_dev/add_dir', form_data, function (res) {
+                  console.log(res);
+                  var status = res.status;
+                  if (!status) {
+                    show_msg(res.message, 800);
+                  } else {
+                    show_msg("success", 1000);
+                    d.close().remove()
+                    init();
+                  }
+
+                  {#console.log(res);#}
+                })
+                return false;
+              },
+              cancelValue: '取消',
+              cancel: function () {
+              }
+
+            })
+        d.showModal();
+      }
+
+      function del(ele){
+        ele = jQuery(ele);
+        var id  = ele.attr("tree_id");
+        var is_dir = ele.attr("is_dir");
+        var tree_name = ele.attr("tree_name");
+        if(is_dir ==1){
+          // 是目录
+            show_ask_msgbox("提示","确定要删除目录" + tree_name + "么？",
+            function(){
+              simple_post("/api/gb_dev/del_dir",{"code": id },function(res){
+                  var status = res.status;
+                  if (!status) {
+                    show_msg(res.message, 800);
+                  } else {
+                    show_msg("success", 1000);
+                    init();
+                  }
+              })
+            })
+        }else{
+          // 是设备
+          show_ask_msgbox("提示","确定要删除下级网关" + tree_name + "么？",
+            function(){
+              simple_post("/api/gb_dev/del_gateway",{"code": id },function(res){
+                  var status = res.status;
+                  if (!status) {
+                    show_msg(res.message, 800);
+                  } else {
+                    show_msg("success", 1000);
+                    init();
+                  }
+              })
+            })
+
+        }
+
+      }
+
+      function init(){
+        show_msg("加载中...", 600)
+        // 初始化
+        function addHoverDom(treeId, treeNode) {  //treeNode是当前hover的节点信息
+          {#console.log(treeId, treeNode);#}
+            var sObj = $("#" + treeNode.tId + "_span");
+            var addStr = '';
+            if (treeNode.is_dir){
+              if (treeNode.editNameFlag || $("#addBtn_" + treeNode.tId).length > 0) return;
+              addStr = "<span class='btn btn-sm btn-primary' id='addBtn_" + treeNode.tId
+                + "' title='添加设备' οnfοcus='this.blur();' onclick='add_gateway(this)' is_dir='" + treeNode.is_dir +"'   tree_name='" + treeNode.name +"' tree_id='" + treeNode.id +"'>添加设备</span>";
+            addStr += "<span class='btn btn-sm btn-primary' id='addDir_" + treeNode.tId
+                + "' title='添加目录' οnfοcus='this.blur();' onclick='add_dir(this)' is_dir='" + treeNode.is_dir +"' tree_name='" + treeNode.name +"' tree_id='" + treeNode.id +"'> 添加目录</span>";
+
+            }
+
+            if (treeNode.id != '00000000000000000000'){
+              if (treeNode.editNameFlag || $("#delBtn_" + treeNode.tId).length > 0) return;
+                          addStr += "<span class='btn btn-sm btn-primary' id='delBtn_" + treeNode.tId
+                + "' title='删除' οnfοcus='this.blur();' onclick='del(this)'  is_dir='" + treeNode.is_dir +"' tree_name='" + treeNode.name +"' tree_id='" + treeNode.id +"'> 删除</span>";
+              addStr += "<span class='btn btn-sm btn-primary' id='editBtn_" + treeNode.tId
+                + "' title='编辑' οnfοcus='this.blur();' onclick='edit(this)'  is_dir='" + treeNode.is_dir +"'  tree_name='" + treeNode.name +"' tree_id='" + treeNode.id +"'> 编辑</span>";
+            }
+
+            sObj.after(addStr);
+        }
+        function removeHoverDom(treeId, treeNode) {
+            $("#addBtn_" + treeNode.tId).unbind().remove();
+            $("#addDir_" + treeNode.tId).unbind().remove();
+            $("#delBtn_" + treeNode.tId).unbind().remove();
+            $("#editBtn_" + treeNode.tId).unbind().remove();
+          };
+          var zTreeObj;
+          var setting = {
+            view: {
+              selectedMulti: false,
+              addHoverDom: addHoverDom, //移入节点显示编辑按钮
+              removeHoverDom: removeHoverDom,
+
+            },
+             data: {
+            simpleData: {
+                enable: true
+            }
+        },
+          };  // zTree 的参数配置，后面详解
+            {#setting.edit.showRemoveBtn = true#}
+          simple_get('/api/gb_dev/sub_dir_info', function (res) {
+            var data = res.data;
+            var zNodes = [];
+            data.forEach(function (item, index){
+              zNodes.push({"id": item.id,"pId": item.parent,"name": item.name,
+                "open": item.is_dir,
+                "icon":item.is_dir? "/static/imgs/dir.png": "/static/imgs/gateway.png" ,
+                "is_dir": item.is_dir? 1:0})
+            });
+
+            zTreeObj = $.fn.zTree.init($("#tree_container"), setting, zNodes);
+
+          })
+        simple_get("/api/gb_dev/all_gateway_info",
+          function (res){
+            var item_list = res.data;
+            var table_html = '';
+            Object.entries(item_list).forEach(function (item) {
+              var item_data = item[1];
+              table_html += ( '<tr attr_name="'+ item_data.name +'" attr_id="'+ item_data.code +'" >\n' +
+                      '                    <td>'+ item_data._pk +'</td>\n' +
+                  '                    <td> <span class="label label-success" >'+ item_data.name +' </span>  </td>\n' +
+                  '                    <td>' + item_data.code + '</td>\n' +
+                  '                    <td>'+ (item_data.manufacture || '-') + '</td>\n' +
+                      '                    <td>'+ (item_data.reg_time? getDatetime(item_data.reg_time*1000):"-") +'</td>\n' +
+           '                    <td>'+ (item_data.heartbeat_time? getDatetime(item_data.heartbeat_time*1000):"-") +'</td>\n' +
+                  '                    <td>'+ (item_data.is_online? '在线': '离线') +'</td>\n' +
+
+                  '                    <td>' +
+                       '<a href="#" onclick="edit(this)"  is_dir="' + 0 +'"  tree_name="' + item_data.name +'" tree_id="' + item_data.code +'" >修改</a> &nbsp;' +
+                      '<a href="#" onclick="del(this)"   is_dir="' + 0 +'"  tree_name="' + item_data.name +'" tree_id="' + item_data.code +'">删除</a> &nbsp;' +
+                       '<a href="#" onclick="dev_detail(this)" is_dir="' + 0 +'"  tree_name="' + item_data.name +'" tree_id="' + item_data.code +'">设备详情</a> &nbsp;' +
+                  '\n' +
+                  '                </tr>' )
+            })
+            jQuery('#tbody').html(table_html)
+          })
+        }
+
+      init()
+
+    </script>
+{% endblock %}

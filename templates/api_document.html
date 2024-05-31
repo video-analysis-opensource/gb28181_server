@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>API文档</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static/bootstrap3/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+    <div style="text-align: center;padding-bottom: 30px">
+        <h1>API文档</h1>{% if request.GET.module %}<a href="{{ request.path }}">回到模块列表页</a>{% endif %}
+    </div>
+    <input type="hidden" class="page" value="{% if request.GET.module %}{{ request.GET.module }}{% endif %}">
+
+    {% if request.GET.module %}
+        {% for ii,j in result %}
+            {% with i=ii.0 %}
+            {% if i == request.GET.module %}
+                <h2 style="text-align: center;padding-bottom: 40px">{{ i }}模块</h2>
+                {% for k,l,p,q in j %}
+                    <h3 class="views_name">{{ l }}</h3>
+                    <p style="color: red;">访问权限：{% if q %}登录后访问{% else %}直接访问{% endif %}</p>
+                    <div class="list-group">
+                        <div href="#" class="list-group-item active">
+                            <h4 class="list-group-item-heading">
+                                接口说明：
+                            </h4>
+                        </div>
+                        <div href="#" class="list-group-item">
+
+                            <p class="list-group-item-text">
+                                <pre>{{ p }}</pre>
+                            </p>
+                        </div>
+                    </div>
+                    <div id="views_container {{ k }}" style="height: 300%"></div>
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
+        {% endfor %}
+    {% else %}
+        {% for i,j in result %}
+
+            <p style="text-align: center;font-size: 27px;padding-bottom: 30px">{{ i.0 }}模块 <a
+                    href="?module={{ i.0 }}">点击进入</a></p>
+{#            <div href="#" class="list-group-item">#}
+{##}
+{#                            <p class="list-group-item-text">#}
+{#                                <pre>{{ p }}</pre>#}
+{#                            </p>#}
+{#                        </div>#}
+        {% endfor %}
+        <div id="module_container" style="height: 300%"></div>
+    {% endif %}
+</div>
+</body>
+<script src="/static/bootstrap3/jquery.min.js"></script>
+<script src="/static/bootstrap3/bootstrap.min.js"></script>
+<script type="text/javascript">
+    $(function () {
+        var ready_load;
+        function draw_page(views_name, element_id) {
+            console.log(views_name)
+            $.ajax({
+                    type: 'POST',
+                    dataType: 'json',
+                    url: views_name?'/api/api_delta_time?views_name='+views_name:'/api/api_delta_time',
+                    success: function (res) {
+                        var data = res.data;
+                        var x_data = []
+                        var series_data = []
+                        for (var i in data) {
+                            var v = data[i]
+                            x_data.push(v.addtime)
+                            series_data.push(v.delta_time)
+                        }
+
+                        var dom = document.getElementById(element_id);
+                        var myChart = echarts.init(dom);
+                        var app = {};
+                        option = null;
+                        option = {
+                            title: {
+                                text: '接口耗时监控',
+                                subtext: views_name,
+                                x: 'center'
+                            },
+                            tooltip: {
+                                trigger: 'axis',
+                                formatter: function (params) {
+                                    var views_name = data[params[0].dataIndex].views_name
+                                    if (!views_name) {
+                                        return params[0].name + '<br/>' +
+                                        params[0].seriesName + ': ' + params[0].value + ' ms';
+                                    } else {
+                                        return params[0].name + '<br/>' +
+                                        '接口名: ' + views_name + '<br/>' +
+                                        params[0].seriesName + ': ' + params[0].value + ' ms';
+                                    }
+                                }
+                            },
+                            grid: {
+                                left: 150,
+                                right: 150
+                            },
+                            dataZoom: {
+                                show: true,
+                                realtime: true,
+                                start: 0,
+                                end: 100
+                            },
+                            xAxis: {
+                                name: "时间",
+                                type: 'category',
+                                data: x_data
+                            },
+                            yAxis: {
+                                name: '耗时（ms)',
+                                type: 'value'
+                            },
+                            series: [{
+                                name: "接口耗时",
+                                data: series_data,
+                                type: 'line',
+                                smooth: true,
+                                lineStyle: {
+                                    normal: {
+                                        color: "#72ACE3"
+                                    }
+                                }
+                            }],
+                            color: ["#72ACE3"]
+                        };
+                        if (option && typeof option === "object") {
+                            myChart.setOption(option, true);
+                        }
+                    }
+                })
+        }
+
+
+        var page = $('.page').val();
+        if (page) {
+            ready_load = function () {
+                var ss = $('.views_name')
+                ss.each(function (key, value) {
+                    var views_name = $(value).text();
+                    draw_page(views_name, 'views_container '+views_name)
+                })
+            }
+        } else {
+            ready_load = function () {
+                draw_page(null, 'module_container')
+            }
+        }
+        ready_load();
+    })
+</script>
+</html>

@@ -1,0 +1,18 @@
+wheel
+redis
+sysv_ipc
+Flask == 2.0.1
+gevent == 1.4.0
+bitstring
+psutil
+Pillow
+setproctitle
+av == 8.0.3
+requests
+uwsgi == 2.0.20
+greenlet == 0.4.15
+gevent-websocket
+mysql-connector-python
+mysqlclient
+Django == 2.2.14
+cloudpickle

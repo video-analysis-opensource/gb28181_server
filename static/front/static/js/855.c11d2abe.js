@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkweb_client_video_gateway=self.webpackChunkweb_client_video_gateway||[]).push([[855],{1855:function(e,n,t){t.r(n),t.d(n,{default:function(){return l}});n={};var l=(0,t(3736).Z)(n,(function(){var e=this,n=e.$createElement;return(e._self._c||n)("div",[e._v("开发中。。。")])}),[],!1,null,null,null).exports}}]);
